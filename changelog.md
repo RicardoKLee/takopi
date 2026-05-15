@@ -1,5 +1,16 @@
 # changelog
 
+## v0.23.2 (2026-05-15)
+
+### changes
+
+- support Telegram `/reasoning` overrides for Claude and PI with engine-specific allowed levels [#241](https://github.com/banteg/takopi/pull/241)
+
+### fixes
+
+- send Telegram file downloads back to the correct forum topic [#181](https://github.com/banteg/takopi/pull/181)
+- render Codex context compaction events as progress actions [#240](https://github.com/banteg/takopi/pull/240)
+
 ## v0.23.1 (2026-05-15)
 
 ### fixes
