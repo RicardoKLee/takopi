@@ -282,6 +282,38 @@ class TopicStateStore(JsonStateStore[_TopicState]):
             self._state.threads.pop(key, None)
             self._save_locked()
 
+    async def find_thread_for_title(
+        self, chat_id: int, title: str
+    ) -> int | None:
+        normalized = title.strip()
+        if not normalized:
+            return None
+        async with self._lock:
+            self._reload_locked_if_needed()
+            for raw_key, thread in self._state.threads.items():
+                if not raw_key.startswith(f"{chat_id}:"):
+                    continue
+                stored = thread.topic_title
+                if stored is None or stored.strip() != normalized:
+                    continue
+                try:
+                    _, thread_str = raw_key.split(":", 1)
+                    return int(thread_str)
+                except ValueError:
+                    continue
+            return None
+
+    async def bind_issue(
+        self, chat_id: int, thread_id: int, title: str
+    ) -> None:
+        normalized = title.strip()
+        async with self._lock:
+            self._reload_locked_if_needed()
+            thread = self._ensure_thread_locked(chat_id, thread_id)
+            thread.topic_title = normalized
+            thread.context = None
+            self._save_locked()
+
     async def find_thread_for_context(
         self, chat_id: int, context: RunContext
     ) -> int | None:

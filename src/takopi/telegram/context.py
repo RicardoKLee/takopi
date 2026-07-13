@@ -15,9 +15,12 @@ __all__ = [
     "_format_ctx_status",
     "_merge_topic_context",
     "_parse_project_branch_args",
+    "_parse_topic_title",
     "_usage_ctx_set",
     "_usage_topic",
 ]
+
+_TOPIC_TITLE_MAX_LEN = 128
 
 
 def _format_context(runtime: TransportRuntime, context: RunContext | None) -> str:
@@ -36,9 +39,17 @@ def _usage_ctx_set(*, chat_project: str | None) -> str:
 
 
 def _usage_topic(*, chat_project: str | None) -> str:
-    if chat_project is not None:
-        return "usage: `/topic @branch`"
-    return "usage: `/topic <project> @branch`"
+    _ = chat_project
+    return "usage: `/topic <issue title>`"
+
+
+def _parse_topic_title(args_text: str) -> tuple[str | None, str | None]:
+    title = args_text.strip()
+    if not title:
+        return None, _usage_topic(chat_project=None).removeprefix("usage: ").strip()
+    if len(title) > _TOPIC_TITLE_MAX_LEN:
+        return None, f"issue title too long (max {_TOPIC_TITLE_MAX_LEN} characters)"
+    return title, None
 
 
 def _parse_project_branch_args(
@@ -110,9 +121,15 @@ def _format_ctx_status(
 ) -> str:
     lines = [
         f"topics: enabled (scope={_topics_scope_label(cfg)})",
-        f"bound ctx: {_format_context(runtime, bound)}",
-        f"resolved ctx: {_format_context(runtime, resolved)} (source: {context_source})",
     ]
+    if snapshot is not None and snapshot.topic_title:
+        lines.append(f"issue: `{snapshot.topic_title}`")
+    lines.extend(
+        [
+            f"bound ctx: {_format_context(runtime, bound)}",
+            f"resolved ctx: {_format_context(runtime, resolved)} (source: {context_source})",
+        ]
+    )
     if chat_project is None and bound is None:
         topic_usage = (
             _usage_topic(chat_project=chat_project).removeprefix("usage: ").strip()
@@ -120,7 +137,9 @@ def _format_ctx_status(
         ctx_usage = (
             _usage_ctx_set(chat_project=chat_project).removeprefix("usage: ").strip()
         )
-        lines.append(f"note: unbound topic — bind with {topic_usage} or {ctx_usage}")
+        lines.append(
+            f"note: unbound topic — create with {topic_usage} or bind with {ctx_usage}"
+        )
     sessions = None
     if snapshot is not None and snapshot.sessions:
         sessions = ", ".join(sorted(snapshot.sessions))

@@ -1318,6 +1318,30 @@ def test_topic_title_projects_scope_includes_project() -> None:
 
 
 @pytest.mark.anyio
+async def test_maybe_rename_topic_preserves_issue_title(tmp_path: Path) -> None:
+    transport = FakeTransport()
+    cfg = make_cfg(transport)
+    store = TopicStateStore(tmp_path / "telegram_topics_state.json")
+
+    await store.bind_issue(123, 77, "RCW trigger")
+
+    await telegram_topics._maybe_rename_topic(
+        cfg,
+        store,
+        chat_id=123,
+        thread_id=77,
+        context=RunContext(project="takopi", branch="main"),
+    )
+
+    bot = cast(FakeBot, cfg.bot)
+    assert bot.edit_topic_calls == []
+    snapshot = await store.get_thread(123, 77)
+    assert snapshot is not None
+    assert snapshot.topic_title == "RCW trigger"
+    assert snapshot.context == RunContext(project="takopi", branch="main")
+
+
+@pytest.mark.anyio
 async def test_maybe_rename_topic_updates_title(tmp_path: Path) -> None:
     transport = FakeTransport()
     cfg = make_cfg(transport)
@@ -1428,17 +1452,12 @@ async def test_topic_command_recreates_stale_topic(tmp_path: Path) -> None:
         topics=TelegramTopicsSettings(enabled=True, scope="main"),
     )
     store = TopicStateStore(tmp_path / "telegram_topics_state.json")
-    await store.set_context(
-        123,
-        77,
-        RunContext(project="takopi", branch="master"),
-        topic_title="takopi @master",
-    )
+    await store.bind_issue(123, 77, "RCW trigger")
     msg = TelegramIncomingMessage(
         transport="telegram",
         chat_id=123,
         message_id=10,
-        text="/topic takopi @master",
+        text="/topic RCW trigger",
         reply_to_message_id=None,
         reply_to_text=None,
         sender_id=123,
@@ -1447,7 +1466,7 @@ async def test_topic_command_recreates_stale_topic(tmp_path: Path) -> None:
     await _handle_topic_command(
         cfg,
         msg,
-        "takopi @master",
+        "RCW trigger",
         store,
         resolved_scope="main",
         scope_chat_ids=frozenset({123}),
@@ -1458,7 +1477,8 @@ async def test_topic_command_recreates_stale_topic(tmp_path: Path) -> None:
     assert await store.get_thread(123, 77) is None
     snapshot = await store.get_thread(123, 55)
     assert snapshot is not None
-    assert snapshot.context == RunContext(project="takopi", branch="master")
+    assert snapshot.topic_title == "RCW trigger"
+    assert snapshot.context is None
 
 
 @pytest.mark.anyio

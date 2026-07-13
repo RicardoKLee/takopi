@@ -13,6 +13,7 @@ from ..context import (
     _format_ctx_status,
     _merge_topic_context,
     _parse_project_branch_args,
+    _parse_topic_title,
     _usage_ctx_set,
     _usage_topic,
 )
@@ -22,7 +23,6 @@ from ..topic_state import TopicStateStore
 from ..topics import (
     _maybe_rename_topic,
     _topic_key,
-    _topic_title,
     _topics_chat_project,
     _topics_command_error,
 )
@@ -281,20 +281,13 @@ async def _handle_topic_command(
     if error is not None:
         await reply(text=error)
         return
-    chat_project = _topics_chat_project(cfg, msg.chat_id)
-    context, error = _parse_project_branch_args(
-        args_text,
-        runtime=cfg.runtime,
-        require_branch=True,
-        chat_project=chat_project,
-    )
-    if error is not None or context is None:
-        usage = _usage_topic(chat_project=chat_project)
-        text = f"error:\n{error}\n{usage}" if error else usage
+    title, parse_error = _parse_topic_title(args_text)
+    if parse_error is not None or title is None:
+        usage = _usage_topic(chat_project=_topics_chat_project(cfg, msg.chat_id))
+        text = f"error:\n{parse_error}\n{usage}" if parse_error else usage
         await reply(text=text)
         return
-    title = _topic_title(runtime=cfg.runtime, context=context)
-    existing = await store.find_thread_for_context(msg.chat_id, context)
+    existing = await store.find_thread_for_title(msg.chat_id, title)
     stale_thread_id: int | None = None
     if existing is not None:
         updated = await cfg.bot.edit_forum_topic(
@@ -304,8 +297,7 @@ async def _handle_topic_command(
         )
         if updated:
             await reply(
-                text=f"topic already exists for {_format_context(cfg.runtime, context)} "
-                "in this chat.",
+                text=f"topic already exists: `{title}`. open it to continue this issue.",
             )
             return
         stale_thread_id = existing
@@ -316,15 +308,14 @@ async def _handle_topic_command(
     thread_id = created.message_thread_id
     if stale_thread_id is not None:
         await store.delete_thread(msg.chat_id, stale_thread_id)
-    await store.set_context(
-        msg.chat_id,
-        thread_id,
-        context,
-        topic_title=title,
-    )
+    await store.bind_issue(msg.chat_id, thread_id, title)
     await reply(text=f"created topic `{title}`.")
-    bound_text = f"topic bound to `{_format_context(cfg.runtime, context)}`"
-    rendered_text, entities = prepare_telegram(MarkdownParts(header=bound_text))
+    welcome = (
+        f"Issue topic `{title}` is ready.\n"
+        "Send tasks here; use `/project` prefixes to target different repos. "
+        "Branches are chosen during development, not when creating the topic."
+    )
+    rendered_text, entities = prepare_telegram(MarkdownParts(header=welcome))
     await cfg.exec_cfg.transport.send(
         channel_id=msg.chat_id,
         message=RenderedMessage(text=rendered_text, extra={"entities": entities}),

@@ -71,6 +71,7 @@ def build_bot_commands(
         commands.append({"command": cmd, "description": description})
         seen.add(cmd)
     for cmd, description in [
+        ("help", "show available commands"),
         ("new", "start a new thread"),
         ("ctx", "show or update context"),
         ("agent", "set default engine"),
@@ -83,7 +84,7 @@ def build_bot_commands(
         commands.append({"command": cmd, "description": description})
         seen.add(cmd)
     if include_topics:
-        for cmd, description in [("topic", "create or bind a topic")]:
+        for cmd, description in [("topic", "create issue topic")]:
             if cmd in seen:
                 continue
             commands.append({"command": cmd, "description": description})

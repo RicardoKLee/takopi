@@ -61,9 +61,21 @@ def test_usage_helpers() -> None:
     )
     assert (
         tg_context._usage_topic(chat_project=None)
-        == "usage: `/topic <project> @branch`"
+        == "usage: `/topic <issue title>`"
     )
-    assert tg_context._usage_topic(chat_project="alpha") == "usage: `/topic @branch`"
+    assert (
+        tg_context._usage_topic(chat_project="alpha")
+        == "usage: `/topic <issue title>`"
+    )
+
+
+def test_parse_topic_title() -> None:
+    title, error = tg_context._parse_topic_title("RCW trigger 调试")
+    assert error is None
+    assert title == "RCW trigger 调试"
+    title, error = tg_context._parse_topic_title("")
+    assert title is None
+    assert error is not None
 
 
 def test_parse_project_branch_args_missing_project(tmp_path: Path) -> None:
@@ -151,7 +163,7 @@ def test_format_ctx_status_includes_sessions(tmp_path: Path) -> None:
     assert "topics: enabled" in text
     assert "bound ctx: none" in text
     assert "resolved ctx: Alpha @main" in text
-    assert "note: unbound topic" in text
+    assert "create with `/topic <issue title>`" in text or "note: unbound topic" in text
     assert "sessions: a, b" in text
 
 

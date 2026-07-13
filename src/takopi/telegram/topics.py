@@ -145,6 +145,16 @@ async def _maybe_rename_topic(
     title = _topic_title(runtime=cfg.runtime, context=context)
     if snapshot is None:
         snapshot = await store.get_thread(chat_id, thread_id)
+    if snapshot is not None and snapshot.topic_title:
+        stored = snapshot.topic_title.strip()
+        managed = (
+            _topic_title(runtime=cfg.runtime, context=snapshot.context).strip()
+            if snapshot.context is not None
+            else ""
+        )
+        if stored and stored != managed and stored != title:
+            await store.set_context(chat_id, thread_id, context)
+            return
     if snapshot is not None and snapshot.topic_title == title:
         return
     updated = await cfg.bot.edit_forum_topic(

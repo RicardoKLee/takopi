@@ -167,6 +167,33 @@ async def test_chat_new_command_group_clears(tmp_path: Path) -> None:
 
 
 @pytest.mark.anyio
+async def test_topic_command_creates_issue_topic(tmp_path: Path) -> None:
+    transport = FakeTransport()
+    cfg = replace(
+        make_cfg(transport),
+        topics=TelegramTopicsSettings(enabled=True, scope="all"),
+    )
+    store = TopicStateStore(tmp_path / "topics.json")
+    msg = _msg("/topic RCW trigger 调试", chat_type="supergroup")
+
+    await _handle_topic_command(
+        cfg,
+        msg,
+        args_text="RCW trigger 调试",
+        store=store,
+        resolved_scope="all",
+        scope_chat_ids=frozenset({msg.chat_id}),
+    )
+
+    texts = [call["message"].text for call in transport.send_calls]
+    assert any("created topic" in text and "RCW trigger 调试" in text for text in texts)
+    snapshot = await store.get_thread(msg.chat_id, 1)
+    assert snapshot is not None
+    assert snapshot.topic_title == "RCW trigger 调试"
+    assert snapshot.context is None
+
+
+@pytest.mark.anyio
 async def test_topic_command_requires_args(tmp_path: Path) -> None:
     transport = FakeTransport()
     cfg = replace(

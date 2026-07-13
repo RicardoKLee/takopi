@@ -32,6 +32,20 @@ async def test_topic_state_store_roundtrip(tmp_path) -> None:
 
 
 @pytest.mark.anyio
+async def test_topic_state_bind_issue_and_find_by_title(tmp_path) -> None:
+    path = tmp_path / "telegram_topics_state.json"
+    store = TopicStateStore(path)
+    await store.bind_issue(2, 20, "Harness dev-loop")
+
+    found = await store.find_thread_for_title(2, "Harness dev-loop")
+    assert found == 20
+    snapshot = await store.get_thread(2, 20)
+    assert snapshot is not None
+    assert snapshot.topic_title == "Harness dev-loop"
+    assert snapshot.context is None
+
+
+@pytest.mark.anyio
 async def test_topic_state_store_clear_and_find(tmp_path) -> None:
     path = tmp_path / "telegram_topics_state.json"
     store = TopicStateStore(path)

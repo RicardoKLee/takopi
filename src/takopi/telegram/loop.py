@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, cast
 import anyio
 from anyio.abc import TaskGroup
 
+from ..chat_help import ChatHelpOptions, format_chat_help
 from ..config import ConfigError
 from ..config_watch import ConfigReload, watch_config as watch_config_changes
 from ..commands import list_command_ids
@@ -207,6 +208,21 @@ def _dispatch_builtin_command(
     scope_chat_ids = ctx.scope_chat_ids
     reply = ctx.reply
     task_group = ctx.task_group
+    if command_id == "help":
+        text = format_chat_help(
+            ChatHelpOptions(
+                transport="telegram",
+                engine_ids=cfg.runtime.engine_ids,
+                project_aliases=tuple(cfg.runtime.project_aliases()),
+                default_engine=cfg.runtime.default_engine,
+                include_file=True,
+                include_topics=cfg.topics.enabled,
+                files_enabled=cfg.files.enabled,
+            )
+        )
+        task_group.start_soon(partial(reply, text=text))
+        return True
+
     if command_id == "file":
         if not cfg.files.enabled:
             handler = partial(
@@ -1373,9 +1389,9 @@ async def run_main_loop(
                     and resolved.context_source not in {"directives", "reply_ctx"}
                 ):
                     await reply(
-                        text="this topic isn't bound to a project yet.\n"
-                        f"{_usage_ctx_set(chat_project=chat_project)} or "
-                        f"{_usage_topic(chat_project=chat_project)}",
+                        text="this topic isn't ready yet.\n"
+                        f"{_usage_topic(chat_project=chat_project)} or "
+                        f"{_usage_ctx_set(chat_project=chat_project)}",
                     )
                     return effective_context, False
                 return effective_context, True
