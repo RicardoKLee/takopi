@@ -10,7 +10,7 @@ from lark_oapi.core.model import BaseRequest, RequestOption
 from lark_oapi.core.token.auth import verify
 from lark_oapi.api.im.v1 import ListChatRequest
 
-from ..logging import get_logger
+from takopi.logging import get_logger
 
 from .settings import FeishuTransportSettings
 

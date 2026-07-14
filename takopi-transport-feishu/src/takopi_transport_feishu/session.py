@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ..model import EngineId, ResumeToken
+from takopi.model import EngineId, ResumeToken
 
 __all__ = ["SessionStore"]
 

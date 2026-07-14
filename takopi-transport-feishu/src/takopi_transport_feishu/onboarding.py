@@ -10,13 +10,13 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from ..backends import EngineBackend, SetupIssue
-from ..backends_helpers import install_issue
-from ..config import ConfigError, dump_toml, ensure_table, read_config, write_config
-from ..engines import list_backends
-from ..logging import suppress_logs
-from ..settings import HOME_CONFIG_PATH, load_settings
-from ..transports import SetupResult
+from takopi.backends import EngineBackend, SetupIssue
+from takopi.backends_helpers import install_issue
+from takopi.config import ConfigError, dump_toml, ensure_table, read_config, write_config
+from takopi.engines import list_backends
+from takopi.logging import suppress_logs
+from takopi.settings import HOME_CONFIG_PATH, load_settings
+from takopi.transports import SetupResult
 
 __all__ = ["check_setup", "interactive_setup", "mask_secret"]
 

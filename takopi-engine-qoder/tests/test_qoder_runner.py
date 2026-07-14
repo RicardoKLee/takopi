@@ -2,15 +2,15 @@ import json
 from pathlib import Path
 
 
-from takopi.runners.qoder.runner import (
+from takopi_engine_qoder.runner import (
     ENGINE,
     QoderRunner,
     QoderStreamState,
     build_runner,
     resolve_qoder_cmd,
 )
-from takopi.runners.qoder.stream import translate_qoder_event
-from takopi.runners.qoder import schema
+from takopi_engine_qoder.stream import translate_qoder_event
+from takopi_engine_qoder import schema
 from takopi.api import ActionEvent, CompletedEvent, ResumeToken, StartedEvent
 
 

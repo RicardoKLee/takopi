@@ -19,7 +19,7 @@ from lark_oapi.core.enum import LogLevel
 from lark_oapi.event.dispatcher_handler import EventDispatcherHandler
 from lark_oapi.ws import Client as WsClient
 
-from ..logging import get_logger
+from takopi.logging import get_logger
 
 from .messages import parse_incoming_message
 from .render import text_message_content

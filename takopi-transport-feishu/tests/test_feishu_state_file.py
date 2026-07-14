@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from takopi.feishu.file_transfer import (
+from takopi_transport_feishu.file_transfer import (
     deny_reason,
     normalize_relative_path,
     parse_file_command,
     save_bytes_to_path,
 )
-from takopi.feishu.state import FeishuStateStore, resolve_state_path
-from takopi.feishu.types import FeishuChatContext, FeishuThreadContext
+from takopi_transport_feishu.state import FeishuStateStore, resolve_state_path
+from takopi_transport_feishu.types import FeishuChatContext, FeishuThreadContext
 
 
 def test_parse_file_command() -> None:

@@ -8,7 +8,7 @@ from typing import Any
 
 import msgspec
 
-from ...api import (
+from takopi.api import (
     ActionEvent,
     CompletedEvent,
     EngineId,
@@ -46,7 +46,7 @@ def _coerce_comma_list(value: Any) -> str | None:
 
 def _resolve_run_options_model() -> str | None:
     try:
-        from ..run_options import get_run_options
+        from takopi.runners.run_options import get_run_options
     except ImportError:
         return None
     run_options = get_run_options()

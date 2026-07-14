@@ -6,21 +6,21 @@ from typing import Literal
 
 import anyio
 
-from ..config import ConfigError
-from ..context import RunContext
-from ..directives import DirectiveError
-from ..logging import bind_run_context, clear_context, get_logger
-from ..model import ResumeToken
-from ..runner_bridge import (
+from takopi.config import ConfigError
+from takopi.context import RunContext
+from takopi.directives import DirectiveError
+from takopi.logging import bind_run_context, clear_context, get_logger
+from takopi.model import ResumeToken
+from takopi.runner_bridge import (
     ExecBridgeConfig,
     IncomingMessage,
     RunningTasks,
     handle_message,
 )
-from ..runners.run_options import EngineRunOptions, apply_run_options
-from ..transport import MessageRef
-from ..transport_runtime import TransportRuntime
-from ..utils.paths import reset_run_base_dir, set_run_base_dir
+from takopi.runners.run_options import EngineRunOptions, apply_run_options
+from takopi.transport import MessageRef
+from takopi.transport_runtime import TransportRuntime
+from takopi.utils.paths import reset_run_base_dir, set_run_base_dir
 
 from .access import is_chat_allowed, is_sender_allowed, should_handle_group_message
 from .chat_prefs import FeishuChatPrefsStore, resolve_prefs_path

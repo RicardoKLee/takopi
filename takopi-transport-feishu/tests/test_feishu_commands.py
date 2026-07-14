@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import pytest
 
-from takopi.feishu.chat_prefs import FeishuChatPrefsStore, resolve_prefs_path
-from takopi.feishu.command_handlers import (
+from takopi_transport_feishu.chat_prefs import FeishuChatPrefsStore, resolve_prefs_path
+from takopi_transport_feishu.command_handlers import (
     AGENT_USAGE,
     MODEL_USAGE,
     engine_only_usage,
     parse_slash_command,
     resolve_chat_engine,
 )
-from takopi.feishu.command_utils import split_command_args
-from takopi.feishu.overrides import (
+from takopi_transport_feishu.command_utils import split_command_args
+from takopi_transport_feishu.overrides import (
     is_valid_reasoning_level,
     resolve_overrides,
     resolve_trigger_mode,

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 
-from ..markdown import MarkdownParts, assemble_markdown_parts
+from takopi.markdown import MarkdownParts, assemble_markdown_parts
 
 MAX_MESSAGE_CHARS = 4000
 MAX_BODY_CHARS = 3500

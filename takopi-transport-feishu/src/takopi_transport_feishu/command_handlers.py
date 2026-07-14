@@ -4,11 +4,11 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ..chat_help import ChatHelpOptions, format_chat_help
-from ..config import ConfigError
-from ..context import RunContext
-from ..ids import RESERVED_CHAT_COMMANDS
-from ..model import EngineId
+from takopi.chat_help import ChatHelpOptions, format_chat_help
+from takopi.config import ConfigError
+from takopi.context import RunContext
+from takopi.ids import RESERVED_CHAT_COMMANDS
+from takopi.model import EngineId
 
 from .chat_prefs import FeishuChatPrefsStore
 from .command_utils import (

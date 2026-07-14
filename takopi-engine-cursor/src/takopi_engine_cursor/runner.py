@@ -15,14 +15,12 @@ from typing import Any
 
 import msgspec
 
-from ..backends import EngineBackend, EngineConfig
-from ..config import ConfigError
-from ..events import EventFactory
-from ..logging import get_logger
-from ..model import ActionKind, EngineId, ResumeToken, TakopiEvent
-from ..runner import JsonlSubprocessRunner, ResumeTokenMixin, Runner
-from ..schemas import cursor as cursor_schema
-from .run_options import get_run_options
+from takopi.events import EventFactory
+from takopi.logging import get_logger
+from takopi.model import ActionKind, EngineId, ResumeToken, TakopiEvent
+from takopi.runner import JsonlSubprocessRunner, ResumeTokenMixin, Runner
+from . import schema as cursor_schema
+from takopi.runners.run_options import get_run_options
 
 logger = get_logger(__name__)
 
@@ -32,7 +30,6 @@ __all__ = [
     "ENGINE",
     "CursorRunner",
     "translate_cursor_event",
-    "BACKEND",
 ]
 
 # Resume line: ``agent --resume <session_id>``
@@ -434,29 +431,3 @@ class CursorRunner(ResumeTokenMixin, JsonlSubprocessRunner):
     def pipes_error_message(self) -> str:
         return "cursor agent failed to open subprocess pipes"
 
-
-def build_runner(config: EngineConfig, config_path: Path) -> Runner:
-    """Build a CursorRunner from Takopi config."""
-    model = config.get("model")
-    if model is not None and not isinstance(model, str):
-        raise ConfigError(
-            f"Invalid `cursor.model` in {config_path}; expected a string."
-        )
-
-    workspace = config.get("workspace")
-    if workspace is not None and not isinstance(workspace, str):
-        raise ConfigError(
-            f"Invalid `cursor.workspace` in {config_path}; expected a string."
-        )
-
-    title = str(model) if model else "Cursor"
-
-    return CursorRunner(model=model, workspace=workspace, title=title)
-
-
-BACKEND = EngineBackend(
-    id="cursor",
-    build_runner=build_runner,
-    cli_cmd="agent",
-    install_cmd="curl https://cursor.com/install -fsS | bash",
-)

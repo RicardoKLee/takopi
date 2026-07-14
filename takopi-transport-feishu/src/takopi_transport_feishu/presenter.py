@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from ..markdown import MarkdownFormatter
-from ..progress import ProgressState
-from ..transport import RenderedMessage
+from takopi.markdown import MarkdownFormatter
+from takopi.progress import ProgressState
+from takopi.transport import RenderedMessage
 
 from .render import MAX_BODY_CHARS, prepare_feishu, prepare_feishu_multi
 

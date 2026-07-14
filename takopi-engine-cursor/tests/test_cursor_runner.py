@@ -8,13 +8,13 @@ import pytest
 
 from takopi.events import EventFactory
 from takopi.model import ActionEvent, CompletedEvent, ResumeToken, StartedEvent
-from takopi.runners.cursor import (
+from takopi_engine_cursor.runner import (
     ENGINE,
     CursorRunner,
     CursorRunState,
     translate_cursor_event,
 )
-from takopi.schemas import cursor as cursor_schema
+from takopi_engine_cursor import schema as cursor_schema
 
 
 def _load_fixture(name: str) -> list[cursor_schema.CursorEvent]:
@@ -45,7 +45,7 @@ def test_build_args_new_session() -> None:
     runner = CursorRunner(model=None, workspace="/home/user/project")
     state = CursorRunState(factory=runner.new_state("hello", None).factory)
 
-    with patch("takopi.runners.cursor.get_run_options", return_value=None):
+    with patch("takopi_engine_cursor.runner.get_run_options", return_value=None):
         args = runner.build_args("hello", None, state=state)
 
     # build_args returns args for script: -qfc, quoted agent cmd, /dev/null
@@ -64,7 +64,7 @@ def test_build_args_with_resume() -> None:
     resume = ResumeToken(engine=ENGINE, value="session-abc-123")
     state = CursorRunState(factory=runner.new_state("hi", resume).factory)
 
-    with patch("takopi.runners.cursor.get_run_options", return_value=None):
+    with patch("takopi_engine_cursor.runner.get_run_options", return_value=None):
         args = runner.build_args("hi", resume, state=state)
 
     arg_str = " ".join(args)
@@ -76,7 +76,7 @@ def test_build_args_with_model() -> None:
     runner = CursorRunner(model="Claude-4-Opus", workspace=None)
     state = CursorRunState(factory=runner.new_state("hi", None).factory)
 
-    with patch("takopi.runners.cursor.get_run_options", return_value=None):
+    with patch("takopi_engine_cursor.runner.get_run_options", return_value=None):
         args = runner.build_args("hi", None, state=state)
 
     arg_str = " ".join(args)

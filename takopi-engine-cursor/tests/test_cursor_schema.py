@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from takopi.schemas import cursor as cursor_schema
+from takopi_engine_cursor import schema as cursor_schema
 
 
 def _fixture_path(name: str) -> Path:

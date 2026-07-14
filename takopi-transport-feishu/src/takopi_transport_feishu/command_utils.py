@@ -3,7 +3,7 @@ from __future__ import annotations
 import shlex
 from typing import Literal
 
-from ..model import EngineId
+from takopi.model import EngineId
 
 ScopeKind = Literal["chat", "thread"]
 

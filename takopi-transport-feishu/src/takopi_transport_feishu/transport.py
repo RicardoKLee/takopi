@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..transport import MessageRef, RenderedMessage, SendOptions
+from takopi.transport import MessageRef, RenderedMessage, SendOptions
 
 from .client import FeishuClient
 

@@ -4,15 +4,15 @@ import json
 
 import pytest
 
-from takopi.feishu.access import (
+from takopi_transport_feishu.access import (
     is_chat_allowed,
     is_sender_allowed,
     should_handle_group_message,
 )
-from takopi.feishu.messages import _content_to_text, _strip_mentions
-from takopi.feishu.render import is_cancel_command, text_message_content
-from takopi.feishu.session import SessionStore
-from takopi.feishu.settings import parse_feishu_settings
+from takopi_transport_feishu.messages import _content_to_text, _strip_mentions
+from takopi_transport_feishu.render import is_cancel_command, text_message_content
+from takopi_transport_feishu.session import SessionStore
+from takopi_transport_feishu.settings import parse_feishu_settings
 
 
 def test_parse_feishu_settings_minimal() -> None:

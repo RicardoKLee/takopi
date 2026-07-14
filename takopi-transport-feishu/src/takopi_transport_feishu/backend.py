@@ -5,11 +5,11 @@ from pathlib import Path
 
 import anyio
 
-from ..backends import EngineBackend
-from ..logging import get_logger
-from ..runner_bridge import ExecBridgeConfig
-from ..transport_runtime import TransportRuntime
-from ..transports import SetupResult, TransportBackend
+from takopi.backends import EngineBackend
+from takopi.logging import get_logger
+from takopi.runner_bridge import ExecBridgeConfig
+from takopi.transport_runtime import TransportRuntime
+from takopi.transports import SetupResult, TransportBackend
 
 from .client import FeishuClient
 from .loop import FeishuBridgeConfig, run_main_loop

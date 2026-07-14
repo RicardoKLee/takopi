@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-
-from ...api import EngineBackend
+from takopi.api import EngineBackend
 
 from .runner import build_runner
 
@@ -12,5 +11,4 @@ BACKEND = EngineBackend(
     install_cmd="https://docs.qoder.com/en/cli/using-cli",
 )
 
-# Re-export for type checkers / tests.
 __all__ = ["BACKEND", "build_runner"]
