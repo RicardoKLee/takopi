@@ -34,28 +34,42 @@ for this fork, install core + plugins:
 ```sh
 git clone git@github.com:RicardoKLee/takopi.git
 cd takopi
-TAKOPI_PY="/home/user/.local/share/uv/tools/takopi/bin/python3"
+TAKOPI_PY="$(uv tool dir takopi 2>/dev/null)/bin/python3"
+# fallback if takopi not yet installed via uv tool:
+TAKOPI_PY="${TAKOPI_PY:-$(dirname "$(which takopi)")/python3}"
 
 # core (telegram + codex/claude/opencode/pi)
 uv pip install -e . --python "$TAKOPI_PY"
 
-# fork plugins (separate public repos, like takopi-discord)
+# fork plugins (separate public repos; not on PyPI yet — install from GitHub)
 uv pip install "takopi-engine-cursor @ git+https://github.com/RicardoKLee/takopi-engine-cursor.git" --python "$TAKOPI_PY"
 uv pip install "takopi-engine-qoder @ git+https://github.com/RicardoKLee/takopi-engine-qoder.git" --python "$TAKOPI_PY"
 uv pip install "takopi-transport-feishu @ git+https://github.com/RicardoKLee/takopi-transport-feishu.git" --python "$TAKOPI_PY"
 uv pip install takopi-discord --python "$TAKOPI_PY"
 ```
 
+for local plugin development, clone sibling repos and install editable:
+
+```sh
+git clone git@github.com:RicardoKLee/takopi-engine-cursor.git ../takopi-engine-cursor
+git clone git@github.com:RicardoKLee/takopi-engine-qoder.git ../takopi-engine-qoder
+git clone git@github.com:RicardoKLee/takopi-transport-feishu.git ../takopi-transport-feishu
+
+uv pip install -e ../takopi-engine-cursor --python "$TAKOPI_PY"
+uv pip install -e ../takopi-engine-qoder --python "$TAKOPI_PY"
+uv pip install -e ../takopi-transport-feishu --python "$TAKOPI_PY"
+```
+
 ## fork plugins
 
-extensions ship as separate public packages, matching the `takopi-discord` pattern:
+extensions ship as separate public packages (same pattern as `takopi-discord`):
 
-| package | repo | type | id |
-|---------|------|------|----|
-| `takopi-engine-cursor` | [RicardoKLee/takopi-engine-cursor](https://github.com/RicardoKLee/takopi-engine-cursor) | engine | `cursor` |
-| `takopi-engine-qoder` | [RicardoKLee/takopi-engine-qoder](https://github.com/RicardoKLee/takopi-engine-qoder) | engine | `qoder` |
-| `takopi-transport-feishu` | [RicardoKLee/takopi-transport-feishu](https://github.com/RicardoKLee/takopi-transport-feishu) | transport | `feishu` |
-| `takopi-discord` | [asianviking/takopi-discord](https://github.com/asianviking/takopi-discord) | transport | `discord` |
+| package | repo | type | id | install |
+|---------|------|------|----|---------|
+| `takopi-engine-cursor` | [RicardoKLee/takopi-engine-cursor](https://github.com/RicardoKLee/takopi-engine-cursor) | engine | `cursor` | git (see above) |
+| `takopi-engine-qoder` | [RicardoKLee/takopi-engine-qoder](https://github.com/RicardoKLee/takopi-engine-qoder) | engine | `qoder` | git (see above) |
+| `takopi-transport-feishu` | [RicardoKLee/takopi-transport-feishu](https://github.com/RicardoKLee/takopi-transport-feishu) | transport | `feishu` | git (see above) |
+| `takopi-discord` | [asianviking/takopi-discord](https://github.com/asianviking/takopi-discord) | transport | `discord` | PyPI |
 
 verify with:
 
@@ -171,12 +185,16 @@ see [`docs/how-to/write-a-plugin.md`](docs/how-to/write-a-plugin.md) and [`docs/
 ## development
 
 ```sh
+# core
+git clone git@github.com:RicardoKLee/takopi.git
 cd takopi && uv sync && uv run pytest
 
-# plugin repos (clone siblings separately)
+# plugins (separate repos)
 git clone git@github.com:RicardoKLee/takopi-engine-cursor.git && cd takopi-engine-cursor && uv run pytest
 git clone git@github.com:RicardoKLee/takopi-engine-qoder.git && cd takopi-engine-qoder && uv run pytest
 git clone git@github.com:RicardoKLee/takopi-transport-feishu.git && cd takopi-transport-feishu && uv run pytest
 ```
+
+after changing plugins, reinstall editable packages and restart PM2 transports.
 
 see [`docs/reference/specification.md`](docs/reference/specification.md) and [`docs/developing.md`](docs/developing.md).
