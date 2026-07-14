@@ -29,33 +29,33 @@ at least one engine on PATH: `codex`, `claude`, `cursor`, `qoder`, `opencode`, o
 uv tool install -U takopi
 ```
 
-for this fork, install core + plugins from checkouts:
+for this fork, install core + plugins:
 
 ```sh
 git clone git@github.com:RicardoKLee/takopi.git
 cd takopi
-TAKOPI_PY="$(dirname "$(which takopi)")/python"
+TAKOPI_PY="/home/user/.local/share/uv/tools/takopi/bin/python3"
 
 # core (telegram + codex/claude/opencode/pi)
 uv pip install -e . --python "$TAKOPI_PY"
 
-# fork plugins (same repo, same layout as takopi-discord)
-uv pip install -e ./takopi-engine-cursor --python "$TAKOPI_PY"
-uv pip install -e ./takopi-engine-qoder --python "$TAKOPI_PY"
-uv pip install -e ./takopi-transport-feishu --python "$TAKOPI_PY"
+# fork plugins (separate public repos, like takopi-discord)
+uv pip install "takopi-engine-cursor @ git+https://github.com/RicardoKLee/takopi-engine-cursor.git" --python "$TAKOPI_PY"
+uv pip install "takopi-engine-qoder @ git+https://github.com/RicardoKLee/takopi-engine-qoder.git" --python "$TAKOPI_PY"
+uv pip install "takopi-transport-feishu @ git+https://github.com/RicardoKLee/takopi-transport-feishu.git" --python "$TAKOPI_PY"
 uv pip install takopi-discord --python "$TAKOPI_PY"
 ```
 
-## fork plugins (this repo family)
+## fork plugins
 
-extensions ship as separate packages, matching the `takopi-discord` pattern:
+extensions ship as separate public packages, matching the `takopi-discord` pattern:
 
-| package | type | id |
-|---------|------|----|
-| `takopi-engine-cursor` | engine | `cursor` |
-| `takopi-engine-qoder` | engine | `qoder` |
-| `takopi-transport-feishu` | transport | `feishu` |
-| `takopi-discord` | transport | `discord` |
+| package | repo | type | id |
+|---------|------|------|----|
+| `takopi-engine-cursor` | [RicardoKLee/takopi-engine-cursor](https://github.com/RicardoKLee/takopi-engine-cursor) | engine | `cursor` |
+| `takopi-engine-qoder` | [RicardoKLee/takopi-engine-qoder](https://github.com/RicardoKLee/takopi-engine-qoder) | engine | `qoder` |
+| `takopi-transport-feishu` | [RicardoKLee/takopi-transport-feishu](https://github.com/RicardoKLee/takopi-transport-feishu) | transport | `feishu` |
+| `takopi-discord` | [asianviking/takopi-discord](https://github.com/asianviking/takopi-discord) | transport | `discord` |
 
 verify with:
 
@@ -173,10 +173,10 @@ see [`docs/how-to/write-a-plugin.md`](docs/how-to/write-a-plugin.md) and [`docs/
 ```sh
 cd takopi && uv sync && uv run pytest
 
-# plugin packages (in-repo)
-cd takopi-engine-cursor && uv run pytest
-cd ../takopi-engine-qoder && uv run pytest
-cd ../takopi-transport-feishu && uv run pytest
+# plugin repos (clone siblings separately)
+git clone git@github.com:RicardoKLee/takopi-engine-cursor.git && cd takopi-engine-cursor && uv run pytest
+git clone git@github.com:RicardoKLee/takopi-engine-qoder.git && cd takopi-engine-qoder && uv run pytest
+git clone git@github.com:RicardoKLee/takopi-transport-feishu.git && cd takopi-transport-feishu && uv run pytest
 ```
 
 see [`docs/reference/specification.md`](docs/reference/specification.md) and [`docs/developing.md`](docs/developing.md).
