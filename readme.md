@@ -2,7 +2,7 @@
 
 🐙 *he just wants to help-pi*
 
-telegram bridge for codex, claude code, opencode, pi. manage multiple projects and worktrees, stream progress, and resume sessions anywhere.
+telegram bridge for codex, claude code, cursor, opencode, pi. manage multiple projects and worktrees, stream progress, and resume sessions anywhere.
 
 ## features
 
@@ -12,7 +12,7 @@ telegram bridge for codex, claude code, opencode, pi. manage multiple projects a
 - parallel runs across agent sessions, per-agent-session queue with Codex steering/cancel controls
 - works with telegram features like voice notes and scheduled messages
 - file transfer: send files to the repo or fetch files/dirs back
-- group chats and topics: map group topics to repo/branch contexts
+- group chats and topics: create a forum topic per issue with `/topic <issue title>`, target repos/branches per task
 - works with existing anthropic and openai subscriptions
 
 ## requirements
@@ -21,7 +21,7 @@ telegram bridge for codex, claude code, opencode, pi. manage multiple projects a
 
 python 3.14+ (`uv python install 3.14`)
 
-at least one engine on PATH: `codex`, `claude`, `opencode`, or `pi`
+at least one engine on PATH: `codex`, `claude`, `cursor`, `opencode`, or `pi`
 
 ## install
 
@@ -51,7 +51,9 @@ cd ~/dev/happy-gadgets
 takopi
 ```
 
-send a message to your bot. prefix with `/codex`, `/claude`, `/opencode`, or `/pi` to pick an engine. reply to continue a thread.
+send a message to your bot. prefix with `/codex`, `/claude`, `/cursor`, `/opencode`, or `/pi` to pick an engine. reply to continue a thread.
+
+send `/help` in chat to list available commands, engines, and project aliases for your transport.
 
 register a project with `takopi init happy-gadgets`, then target it from anywhere with `/happy-gadgets hard reset the timeline`.
 
