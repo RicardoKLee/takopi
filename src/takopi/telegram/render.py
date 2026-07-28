@@ -8,11 +8,11 @@ from urllib.parse import urlparse
 from markdown_it import MarkdownIt
 from sulguk import transform_html
 
-from ..markdown import MarkdownParts, assemble_markdown_parts
+from ..markdown import MarkdownParts, assemble_markdown_parts, convert_tables_to_codeblocks
 
 MAX_BODY_CHARS = 3500
 
-_MD_RENDERER = MarkdownIt("commonmark", {"html": False})
+_MD_RENDERER = MarkdownIt("commonmark", {"html": False}).enable("strikethrough")
 _BULLET_RE = re.compile(r"(?m)^(\s*)•")
 _FENCE_RE = re.compile(r"^(?P<indent>[ \t]*)(?P<fence>[`~]{3,})(?P<info>.*)$")
 _ORDERED_ITEM_RE = re.compile(r"^(?P<indent>[ \t]{0,3})(?P<marker>\d+[.)])\s+")
@@ -74,7 +74,8 @@ def _normalize_nested_list_markers(md: str) -> str:
 
 
 def render_markdown(md: str) -> tuple[str, list[dict[str, Any]]]:
-    html = _MD_RENDERER.render(_normalize_nested_list_markers(md or ""))
+    md = convert_tables_to_codeblocks(_normalize_nested_list_markers(md or ""))
+    html = _MD_RENDERER.render(md)
     rendered = transform_html(html)
 
     text = _BULLET_RE.sub(r"\1-", rendered.text)
@@ -229,9 +230,15 @@ def trim_body(body: str | None, *, max_chars: int = MAX_BODY_CHARS) -> str | Non
     return body if body.strip() else None
 
 
+def _bold_header(header: str) -> str:
+    if not header:
+        return header
+    return f"**{header}**"
+
+
 def prepare_telegram(parts: MarkdownParts) -> tuple[str, list[dict[str, Any]]]:
     trimmed = MarkdownParts(
-        header=parts.header or "",
+        header=_bold_header(parts.header or ""),
         body=trim_body(parts.body, max_chars=MAX_BODY_CHARS),
         footer=parts.footer,
     )
@@ -260,7 +267,9 @@ def prepare_telegram_multi(
         payloads.append(
             render_markdown(
                 assemble_markdown_parts(
-                    MarkdownParts(header=header, body=chunk, footer=parts.footer)
+                    MarkdownParts(
+                        header=_bold_header(header), body=chunk, footer=parts.footer
+                    )
                 )
             )
         )

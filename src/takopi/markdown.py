@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import textwrap
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +17,106 @@ HARD_BREAK = "  \n"
 
 MAX_PROGRESS_CMD_LEN = 300
 MAX_FILE_CHANGES_INLINE = 3
+
+_TABLE_ROW_RE = re.compile(r"^\s*\|.+\|\s*$")
+_TABLE_SEP_RE = re.compile(r"^\s*\|[\s\-:|]+\|\s*$")
+_FENCE_START_RE = re.compile(r"^(\s*)([`~]{3,})")
+
+
+def _split_table_row(line: str) -> list[str]:
+    inner = line.strip()
+    if inner.startswith("|"):
+        inner = inner[1:]
+    if inner.endswith("|"):
+        inner = inner[:-1]
+    return [cell.strip() for cell in inner.split("|")]
+
+
+def _format_table_block(lines: list[str]) -> str:
+    rows: list[list[str]] = []
+    for line in lines:
+        if _TABLE_SEP_RE.match(line):
+            continue
+        rows.append(_split_table_row(line))
+    if not rows:
+        return "\n".join(lines)
+
+    num_cols = max(len(row) for row in rows)
+    col_widths = [0] * num_cols
+    for row in rows:
+        for i, cell in enumerate(row):
+            col_widths[i] = max(col_widths[i], len(cell))
+
+    formatted: list[str] = []
+    for idx, row in enumerate(rows):
+        padded = [
+            (row[i] if i < len(row) else "").ljust(col_widths[i])
+            for i in range(num_cols)
+        ]
+        formatted.append("  ".join(padded))
+        if idx == 0 and len(rows) > 1:
+            formatted.append("  ".join("-" * w for w in col_widths))
+
+    return "```\n" + "\n".join(formatted) + "\n```"
+
+
+def convert_tables_to_codeblocks(md: str) -> str:
+    """Convert GFM table blocks to aligned monospace code blocks.
+
+    Neither Telegram nor Discord supports native table rendering, so tables
+    are reformatted as pre-formatted text inside code fences. Tables inside
+    existing code fences are left untouched.
+    """
+    if not md or "|" not in md:
+        return md
+
+    lines = md.splitlines(keepends=True)
+    result: list[str] = []
+    i = 0
+    in_fence = False
+    fence_char = ""
+
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.rstrip("\r\n")
+
+        fence_match = _FENCE_START_RE.match(stripped)
+        if fence_match:
+            fence = fence_match.group(2)
+            if not in_fence:
+                in_fence = True
+                fence_char = fence[0]
+            elif fence[0] == fence_char:
+                in_fence = False
+            result.append(line)
+            i += 1
+            continue
+
+        if in_fence:
+            result.append(line)
+            i += 1
+            continue
+
+        if (
+            _TABLE_ROW_RE.match(stripped)
+            and i + 1 < len(lines)
+            and _TABLE_SEP_RE.match(lines[i + 1].rstrip("\r\n"))
+        ):
+            table_lines = [stripped]
+            j = i + 1
+            while j < len(lines) and _TABLE_ROW_RE.match(
+                lines[j].rstrip("\r\n")
+            ):
+                table_lines.append(lines[j].rstrip("\r\n"))
+                j += 1
+            result.append(_format_table_block(table_lines) + "\n")
+            i = j
+            continue
+
+        result.append(line)
+        i += 1
+
+    return "".join(result)
 
 
 @dataclass(frozen=True, slots=True)
