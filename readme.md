@@ -182,6 +182,47 @@ journalctl --user -u takopi-telegram.service -f
 
 duplicate the unit per transport (`feishu`, `discord`) and adjust `ExecStart`. `Restart=on-failure` gives basic fault tolerance; pair with `loginctl enable-linger` if the service must stay up after logout.
 
+### launchd (macOS)
+
+on macOS, use a per-user `LaunchAgent` to keep a transport running and start it again after login. create `~/Library/LaunchAgents/com.takopi.telegram.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.takopi.telegram</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/YOUR_USERNAME/.local/bin/takopi</string>
+    <string>cursor</string>
+    <string>--transport</string>
+    <string>telegram</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/YOUR_USERNAME/.takopi/takopi-telegram.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/YOUR_USERNAME/.takopi/takopi-telegram.err.log</string>
+</dict>
+</plist>
+```
+
+replace `YOUR_USERNAME` with your macOS username, then load and inspect it:
+
+```sh
+launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.takopi.telegram.plist
+launchctl kickstart -k "gui/$(id -u)/com.takopi.telegram"
+launchctl print "gui/$(id -u)/com.takopi.telegram"
+tail -f ~/.takopi/takopi-telegram.out.log ~/.takopi/takopi-telegram.err.log
+```
+
+copy the plist for `feishu` and `discord`, updating the label, transport, and log paths. use `launchctl bootout "gui/$(id -u)" ~/Library/LaunchAgents/com.takopi.telegram.plist` to stop and unload a transport. `launchd` is the native macOS alternative to `systemd`; PM2 remains the quickest cross-platform setup.
+
 ## plugins
 
 takopi supports entrypoint-based plugins for engines, transports, and commands.

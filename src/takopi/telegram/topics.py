@@ -61,7 +61,9 @@ def _topics_scope_label(cfg: TelegramBridgeConfig) -> str:
 
 def _topics_chat_project(cfg: TelegramBridgeConfig, chat_id: int) -> str | None:
     context = cfg.runtime.default_context_for_chat(chat_id)
-    return context.project if context is not None else None
+    if context is not None:
+        return context.project
+    return cfg.runtime.default_project
 
 
 def _topics_chat_allowed(
