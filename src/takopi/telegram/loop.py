@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import deque
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -27,8 +27,13 @@ from ..context import RunContext
 from ..ids import RESERVED_CHAT_COMMANDS
 from .bridge import (
     CANCEL_CALLBACK_DATA,
+    CHOICE_CALLBACK_PREFIX,
+    CHOICE_INPUT_CALLBACK_PREFIX,
+    CLEAR_MARKUP,
     STEER_CALLBACK_DATA,
     TelegramBridgeConfig,
+    build_choice_input_force_reply,
+    choice_input_prompt_text,
     send_plain,
 )
 from .commands.cancel import (
@@ -145,6 +150,29 @@ def _callback_message(update: TelegramCallbackQuery) -> TelegramIncomingMessage:
         raw=update.raw,
         update_id=update.update_id,
     )
+
+
+def _callback_message_text(update: TelegramCallbackQuery) -> str | None:
+    if update.raw is None:
+        return None
+    message = update.raw.get("message")
+    if not isinstance(message, dict):
+        return None
+    text = message.get("text")
+    return text if isinstance(text, str) else None
+
+
+def _strip_bot_mention_prefix(text: str, bot_username: str | None) -> str:
+    if not bot_username or not text:
+        return text
+    stripped = text.lstrip()
+    prefix = f"@{bot_username}"
+    if not stripped.lower().startswith(prefix):
+        return text
+    rest = stripped[len(prefix) :]
+    if rest and not rest[0].isspace():
+        return text
+    return rest.lstrip()
 
 
 async def _resolve_engine_run_options(
@@ -477,10 +505,21 @@ def _classify_message(
     )
 
 
+@dataclass(frozen=True, slots=True)
+class PendingChoiceInput:
+    letter: str
+    prompt_message_id: int
+    source_message_id: int
+    source_reply_to_text: str | None
+    thread_id: int | None
+    chat_type: str | None
+
+
 @dataclass(slots=True)
 class TelegramLoopState:
     running_tasks: RunningTasks
     pending_prompts: dict[ForwardKey, _PendingPrompt]
+    pending_choice_inputs: dict[tuple[int, int], PendingChoiceInput]
     media_groups: dict[tuple[int, str], _MediaGroupState]
     command_ids: set[str]
     reserved_commands: set[str]
@@ -1034,6 +1073,7 @@ async def run_main_loop(
     state = TelegramLoopState(
         running_tasks={},
         pending_prompts={},
+        pending_choice_inputs={},
         media_groups={},
         command_ids={
             command_id.lower()
@@ -1655,9 +1695,42 @@ async def run_main_loop(
                 )
 
             async def route_message(msg: TelegramIncomingMessage) -> None:
+                if msg.sender_id is not None:
+                    pending_key = (msg.chat_id, msg.sender_id)
+                    pending_input = state.pending_choice_inputs.get(pending_key)
+                    if (
+                        pending_input is not None
+                        and msg.reply_to_message_id == pending_input.prompt_message_id
+                    ):
+                        state.pending_choice_inputs.pop(pending_key, None)
+                        user_text = (msg.text or "").strip()
+                        combined = (
+                            f"{pending_input.letter} {user_text}".strip()
+                            if user_text
+                            else pending_input.letter
+                        )
+                        msg = replace(
+                            msg,
+                            text=combined,
+                            reply_to_message_id=pending_input.source_message_id,
+                            reply_to_text=pending_input.source_reply_to_text,
+                            reply_to_is_bot=True,
+                            thread_id=(
+                                msg.thread_id
+                                if msg.thread_id is not None
+                                else pending_input.thread_id
+                            ),
+                            chat_type=(
+                                msg.chat_type
+                                if msg.chat_type is not None
+                                else pending_input.chat_type
+                            ),
+                        )
                 reply = make_reply(cfg, msg)
                 classification = _classify_message(msg, files_enabled=cfg.files.enabled)
-                text = classification.text
+                text = _strip_bot_mention_prefix(
+                    classification.text, state.bot_username
+                )
                 is_voice_transcribed = False
                 if classification.is_forward_candidate:
                     forward_coalescer.attach_forward(msg)
@@ -1868,6 +1941,63 @@ async def run_main_loop(
 
             allowed_user_ids = set(cfg.allowed_user_ids)
 
+            async def handle_choice_callback(
+                update: TelegramCallbackQuery,
+                letter: str,
+                *,
+                needs_input: bool = False,
+            ) -> None:
+                letter = letter.strip()
+                await cfg.bot.answer_callback_query(update.callback_query_id)
+                if not letter:
+                    return
+                await cfg.bot.edit_message_reply_markup(
+                    chat_id=update.chat_id,
+                    message_id=update.message_id,
+                    reply_markup=CLEAR_MARKUP,
+                )
+                thread_id = _callback_message_thread_id(update)
+                chat_type = _callback_chat_type(update)
+                source_text = _callback_message_text(update)
+                if needs_input:
+                    if update.sender_id is None:
+                        return
+                    prompt = await cfg.bot.send_message(
+                        chat_id=update.chat_id,
+                        text=choice_input_prompt_text(letter),
+                        reply_to_message_id=update.message_id,
+                        message_thread_id=thread_id,
+                        reply_markup=build_choice_input_force_reply(letter),
+                    )
+                    if prompt is None:
+                        return
+                    state.pending_choice_inputs[(update.chat_id, update.sender_id)] = (
+                        PendingChoiceInput(
+                            letter=letter,
+                            prompt_message_id=prompt.message_id,
+                            source_message_id=update.message_id,
+                            source_reply_to_text=source_text,
+                            thread_id=thread_id,
+                            chat_type=chat_type,
+                        )
+                    )
+                    return
+                choice_msg = TelegramIncomingMessage(
+                    transport=update.transport,
+                    chat_id=update.chat_id,
+                    message_id=update.message_id,
+                    text=letter,
+                    reply_to_message_id=update.message_id,
+                    reply_to_text=source_text,
+                    sender_id=update.sender_id,
+                    reply_to_is_bot=True,
+                    thread_id=thread_id,
+                    chat_type=chat_type,
+                    raw=update.raw,
+                    update_id=update.update_id,
+                )
+                await route_message(choice_msg)
+
             async def route_update(update: TelegramIncomingUpdate) -> None:
                 if allowed_user_ids:
                     sender_id = update.sender_id
@@ -1912,7 +2042,22 @@ async def run_main_loop(
                         oldest = state.seen_messages_order.popleft()
                         state.seen_message_keys.discard(oldest)
                 if isinstance(update, TelegramCallbackQuery):
-                    if update.data == CANCEL_CALLBACK_DATA:
+                    if update.data is not None and update.data.startswith(
+                        CHOICE_INPUT_CALLBACK_PREFIX
+                    ):
+                        await handle_choice_callback(
+                            update,
+                            update.data[len(CHOICE_INPUT_CALLBACK_PREFIX) :],
+                            needs_input=True,
+                        )
+                    elif update.data is not None and update.data.startswith(
+                        CHOICE_CALLBACK_PREFIX
+                    ):
+                        await handle_choice_callback(
+                            update,
+                            update.data[len(CHOICE_CALLBACK_PREFIX) :],
+                        )
+                    elif update.data == CANCEL_CALLBACK_DATA:
                         tg.start_soon(
                             handle_callback_cancel,
                             cfg,

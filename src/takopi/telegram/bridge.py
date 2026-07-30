@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 from ..logging import get_logger
 from ..markdown import MarkdownFormatter, MarkdownParts
@@ -25,10 +26,17 @@ from .types import TelegramCallbackQuery, TelegramIncomingMessage
 logger = get_logger(__name__)
 
 __all__ = [
+    "CHOICE_CALLBACK_PREFIX",
+    "CHOICE_INPUT_CALLBACK_PREFIX",
+    "ChoiceOption",
     "TelegramBridgeConfig",
     "TelegramPresenter",
     "TelegramTransport",
     "build_bot_commands",
+    "build_choice_markup",
+    "build_choice_input_force_reply",
+    "choice_input_prompt_text",
+    "detect_choice_options",
     "handle_callback_cancel",
     "handle_callback_steer",
     "handle_cancel",
@@ -51,6 +59,102 @@ STEER_CANCEL_MARKUP = {
     ]
 }
 CLEAR_MARKUP = {"inline_keyboard": []}
+
+CHOICE_CALLBACK_PREFIX = "takopi:choice:"
+CHOICE_INPUT_CALLBACK_PREFIX = "takopi:choice_input:"
+CHOICE_INPUT_KEYWORDS = ("其他", "输入", "自定义")
+CHOICE_BUTTONS_PER_ROW = 4
+MAX_CHOICE_OPTIONS = 20
+
+_CHOICE_LINE_RE = re.compile(
+    r"^(?:[-*+]\s+)?(?P<letter>[A-Z])\s*[.)．）]\s*(?P<text>\S.*)$"
+)
+_FENCE_LINE_RE = re.compile(r"^\s{0,3}(?:`{3,}|~{3,})")
+
+
+@dataclass(frozen=True, slots=True)
+class ChoiceOption:
+    letter: str
+    text: str
+    needs_input: bool
+
+
+def _option_needs_input(text: str) -> bool:
+    return any(keyword in text for keyword in CHOICE_INPUT_KEYWORDS)
+
+
+def detect_choice_options(text: str) -> list[ChoiceOption] | None:
+    """Detect a block of lettered options (A., B., C. ...) in markdown text.
+
+    Returns the options when at least two consecutive letters starting from
+    "A" are found outside fenced code blocks, otherwise None.
+    """
+    if not text:
+        return None
+    options: list[ChoiceOption] = []
+    in_fence = False
+    for raw_line in text.splitlines():
+        stripped = raw_line.strip()
+        if _FENCE_LINE_RE.match(stripped):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        match = _CHOICE_LINE_RE.match(stripped.replace("**", ""))
+        if match is None:
+            continue
+        letter = match.group("letter")
+        expected = chr(ord("A") + len(options))
+        if letter != expected:
+            options = []
+            if letter != "A":
+                continue
+        options.append(
+            ChoiceOption(
+                letter=letter,
+                text=match.group("text").strip(),
+                needs_input=_option_needs_input(match.group("text")),
+            )
+        )
+        if len(options) >= MAX_CHOICE_OPTIONS:
+            break
+    if len(options) < 2:
+        return None
+    return options
+
+
+def build_choice_markup(options: list[ChoiceOption]) -> dict[str, Any]:
+    rows: list[list[dict[str, str]]] = []
+    row: list[dict[str, str]] = []
+    for option in options:
+        prefix = (
+            CHOICE_INPUT_CALLBACK_PREFIX
+            if option.needs_input
+            else CHOICE_CALLBACK_PREFIX
+        )
+        button = {
+            "text": option.letter,
+            "callback_data": f"{prefix}{option.letter}",
+        }
+        row.append(button)
+        if len(row) >= CHOICE_BUTTONS_PER_ROW:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return {"inline_keyboard": rows}
+
+
+def build_choice_input_force_reply(letter: str) -> dict[str, Any]:
+    return {
+        "force_reply": True,
+        "selective": True,
+        "input_field_placeholder": f"{letter} …",
+    }
+
+
+def choice_input_prompt_text(letter: str) -> str:
+    return f"请输入选项 {letter} 的补充内容："
 
 
 class TelegramPresenter:
@@ -96,10 +200,11 @@ class TelegramPresenter:
         parts = self._formatter.render_final_parts(
             state, elapsed_s=elapsed_s, status=status, answer=answer
         )
+        reply_markup = self._final_reply_markup(status=status, answer=answer)
         if self._message_overflow == "split":
             payloads = prepare_telegram_multi(parts, max_body_chars=MAX_BODY_CHARS)
             text, entities = payloads[0]
-            extra = {"entities": entities, "reply_markup": CLEAR_MARKUP}
+            extra = {"entities": entities, "reply_markup": reply_markup}
             if len(payloads) > 1:
                 followups = [
                     RenderedMessage(
@@ -116,8 +221,17 @@ class TelegramPresenter:
         text, entities = prepare_telegram(parts)
         return RenderedMessage(
             text=text,
-            extra={"entities": entities, "reply_markup": CLEAR_MARKUP},
+            extra={"entities": entities, "reply_markup": reply_markup},
         )
+
+    @staticmethod
+    def _final_reply_markup(*, status: str, answer: str) -> dict[str, Any]:
+        if status != "done":
+            return CLEAR_MARKUP
+        options = detect_choice_options(answer)
+        if options is None:
+            return CLEAR_MARKUP
+        return build_choice_markup(options)
 
 
 def _normalized_progress_label(label: str) -> str:

@@ -19,6 +19,7 @@ class FakeBot(BotClient):
     def __init__(self) -> None:
         self.calls: list[str] = []
         self.edit_calls: list[str] = []
+        self.edit_markup_calls: list[tuple[int, int, dict | None]] = []
         self.delete_calls: list[tuple[int, int]] = []
         self.topic_calls: list[tuple[int, int, str]] = []
         self.document_calls: list[
@@ -106,6 +107,16 @@ class FakeBot(BotClient):
             self._edit_attempts += 1
             raise TelegramRetryAfter(self.retry_after)
         self._edit_attempts += 1
+        return Message(message_id=message_id, chat=Chat(id=chat_id, type="private"))
+
+    async def edit_message_reply_markup(
+        self,
+        chat_id: int,
+        message_id: int,
+        reply_markup: dict | None = None,
+    ) -> Message | None:
+        self.calls.append("edit_message_reply_markup")
+        self.edit_markup_calls.append((chat_id, message_id, reply_markup))
         return Message(message_id=message_id, chat=Chat(id=chat_id, type="private"))
 
     async def delete_message(
@@ -256,6 +267,25 @@ async def test_answer_callback_query_uses_outbox() -> None:
     assert result is True
     assert bot.calls == ["answer_callback_query"]
     assert bot.callback_calls == [("cb-1", "ok", True)]
+    await client.close()
+
+
+@pytest.mark.anyio
+async def test_edit_message_reply_markup_uses_outbox() -> None:
+    bot = FakeBot()
+    client = TelegramClient(client=bot, private_chat_rps=0.0, group_chat_rps=0.0)
+    reply_markup = {"inline_keyboard": []}
+
+    result = await client.edit_message_reply_markup(
+        chat_id=7,
+        message_id=42,
+        reply_markup=reply_markup,
+    )
+
+    assert result is not None
+    assert result.message_id == 42
+    assert bot.calls == ["edit_message_reply_markup"]
+    assert bot.edit_markup_calls == [(7, 42, reply_markup)]
     await client.close()
 
 

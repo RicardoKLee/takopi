@@ -267,6 +267,27 @@ class TelegramClient:
             wait=wait,
         )
 
+    async def edit_message_reply_markup(
+        self,
+        chat_id: int,
+        message_id: int,
+        reply_markup: dict[str, Any] | None = None,
+    ) -> Message | None:
+        async def execute() -> Message | None:
+            return await self._client.edit_message_reply_markup(
+                chat_id=chat_id,
+                message_id=message_id,
+                reply_markup=reply_markup,
+            )
+
+        return await self.enqueue_op(
+            key=("edit", chat_id, message_id),
+            label="edit_message_reply_markup",
+            execute=execute,
+            priority=EDIT_PRIORITY,
+            chat_id=chat_id,
+        )
+
     async def delete_message(
         self,
         chat_id: int,

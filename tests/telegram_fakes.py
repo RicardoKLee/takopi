@@ -93,6 +93,7 @@ class FakeBot(BotClient):
         self.send_calls: list[dict] = []
         self.document_calls: list[dict] = []
         self.edit_calls: list[dict] = []
+        self.edit_markup_calls: list[dict] = []
         self.edit_topic_calls: list[dict[str, Any]] = []
         self.delete_calls: list[dict] = []
 
@@ -186,6 +187,21 @@ class FakeBot(BotClient):
                 "parse_mode": parse_mode,
                 "reply_markup": reply_markup,
                 "wait": wait,
+            }
+        )
+        return Message(message_id=message_id, chat=Chat(id=chat_id, type="private"))
+
+    async def edit_message_reply_markup(
+        self,
+        chat_id: int,
+        message_id: int,
+        reply_markup: dict | None = None,
+    ) -> Message:
+        self.edit_markup_calls.append(
+            {
+                "chat_id": chat_id,
+                "message_id": message_id,
+                "reply_markup": reply_markup,
             }
         )
         return Message(message_id=message_id, chat=Chat(id=chat_id, type="private"))

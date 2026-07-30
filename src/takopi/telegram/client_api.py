@@ -85,6 +85,13 @@ class BotClient(Protocol):
         wait: bool = True,
     ) -> Message | None: ...
 
+    async def edit_message_reply_markup(
+        self,
+        chat_id: int,
+        message_id: int,
+        reply_markup: dict[str, Any] | None = None,
+    ) -> Message | None: ...
+
     async def delete_message(
         self,
         chat_id: int,
@@ -453,6 +460,25 @@ class HttpBotClient:
         result = await self._post("editMessageText", params)
         return self._decode_result(
             method="editMessageText",
+            payload=result,
+            model=Message,
+        )
+
+    async def edit_message_reply_markup(
+        self,
+        chat_id: int,
+        message_id: int,
+        reply_markup: dict[str, Any] | None = None,
+    ) -> Message | None:
+        params: dict[str, Any] = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+        }
+        if reply_markup is not None:
+            params["reply_markup"] = reply_markup
+        result = await self._post("editMessageReplyMarkup", params)
+        return self._decode_result(
+            method="editMessageReplyMarkup",
             payload=result,
             model=Message,
         )
