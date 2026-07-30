@@ -14,6 +14,7 @@ RESERVED_CHAT_COMMANDS = frozenset(
         "agent",
         "model",
         "reasoning",
+        "resume",
         "trigger",
         "topic",
         "ctx",

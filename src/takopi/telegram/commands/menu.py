@@ -78,6 +78,7 @@ def build_bot_commands(
         ("model", "set model override"),
         ("reasoning", "set reasoning override"),
         ("trigger", "set trigger mode"),
+        ("resume", "resume session by ID"),
     ]:
         if cmd in seen:
             continue

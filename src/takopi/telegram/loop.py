@@ -1792,6 +1792,75 @@ async def run_main_loop(
                             )
                         )
                         return
+                if command_id == "resume":
+                    forward_coalescer.cancel(forward_key)
+                    from .files import split_command_args as _tg_split_args
+
+                    tokens = _tg_split_args(args_text)
+                    if not tokens:
+                        tg.start_soon(
+                            partial(
+                                reply,
+                                text="usage: `/resume <session_id>` or `/resume <engine> <session_id>`",
+                            )
+                        )
+                        return
+                    engine_ids_set = {e.lower() for e in cfg.runtime.engine_ids}
+                    resume_engine: str | None = None
+                    resume_session_id: str
+                    resume_prompt = "continue"
+                    if len(tokens) >= 2 and tokens[0].lower() in engine_ids_set:
+                        resume_engine = tokens[0].lower()
+                        resume_session_id = tokens[1]
+                        if len(tokens) >= 3:
+                            resume_prompt = " ".join(tokens[2:]).strip() or "continue"
+                    else:
+                        resume_session_id = tokens[0]
+                        if len(tokens) >= 2:
+                            resume_prompt = " ".join(tokens[1:]).strip() or "continue"
+
+                    async def _handle_resume() -> None:
+                        engine_resolution = await resolve_engine_defaults(
+                            explicit_engine=resume_engine,
+                            context=ambient_context,
+                            chat_id=chat_id,
+                            topic_key=topic_key,
+                        )
+                        target_engine = engine_resolution.engine
+                        resume_token = ResumeToken(
+                            engine=target_engine, value=resume_session_id
+                        )
+                        if (
+                            state.topic_store is not None
+                            and topic_key is not None
+                        ):
+                            await state.topic_store.set_session_resume(
+                                topic_key[0], topic_key[1], resume_token
+                            )
+                        if (
+                            state.chat_session_store is not None
+                            and chat_session_key is not None
+                        ):
+                            await state.chat_session_store.set_session_resume(
+                                chat_session_key[0],
+                                chat_session_key[1],
+                                resume_token,
+                            )
+                        await run_job(
+                            chat_id,
+                            user_msg_id,
+                            resume_prompt,
+                            resume_token,
+                            ambient_context,
+                            msg.thread_id,
+                            chat_session_key,
+                            reply_ref,
+                            scheduler.note_thread_known,
+                            target_engine,
+                        )
+
+                    tg.start_soon(_handle_resume)
+                    return
                 if command_id is not None and _dispatch_builtin_command(
                     ctx=TelegramCommandContext(
                         cfg=cfg,
