@@ -2,7 +2,7 @@
 
 🐙 *he just wants to help-pi*
 
-chat bridge for codex, claude code, cursor, qoder, opencode, pi. manage multiple projects and worktrees, stream progress, and resume sessions anywhere.
+chat bridge for codex, claude code, cursor, qoder, antigravity, opencode, pi. manage multiple projects and worktrees, stream progress, and resume sessions anywhere.
 
 ## features
 
@@ -21,7 +21,7 @@ chat bridge for codex, claude code, cursor, qoder, opencode, pi. manage multiple
 
 python 3.14+ (`uv python install 3.14`)
 
-at least one engine on PATH: `codex`, `claude`, `cursor`, `qoder`, `opencode`, or `pi`
+at least one engine on PATH: `codex`, `claude`, `cursor`, `qoder`, `agy`, `opencode`, or `pi`
 
 ## install
 
@@ -42,7 +42,7 @@ TAKOPI_PY="${TAKOPI_PY:-$(dirname "$(which takopi)")/python3}"
 uv pip install -e . --python "$TAKOPI_PY"
 
 # fork plugins (PyPI)
-uv pip install takopi-engine-cursor takopi-engine-qoder takopi-transport-feishu --python "$TAKOPI_PY"
+uv pip install takopi-engine-cursor takopi-engine-qoder takopi-engine-antigravity takopi-transport-feishu --python "$TAKOPI_PY"
 uv pip install takopi-discord --python "$TAKOPI_PY"
 ```
 
@@ -51,6 +51,7 @@ install from GitHub instead of PyPI:
 ```sh
 uv pip install "takopi-engine-cursor @ git+https://github.com/RicardoKLee/takopi-engine-cursor.git" --python "$TAKOPI_PY"
 uv pip install "takopi-engine-qoder @ git+https://github.com/RicardoKLee/takopi-engine-qoder.git" --python "$TAKOPI_PY"
+uv pip install "takopi-engine-antigravity @ git+https://github.com/RicardoKLee/takopi-engine-antigravity.git" --python "$TAKOPI_PY"
 uv pip install "takopi-transport-feishu @ git+https://github.com/RicardoKLee/takopi-transport-feishu.git" --python "$TAKOPI_PY"
 ```
 
@@ -59,10 +60,12 @@ for local plugin development, clone sibling repos and install editable:
 ```sh
 git clone git@github.com:RicardoKLee/takopi-engine-cursor.git ../takopi-engine-cursor
 git clone git@github.com:RicardoKLee/takopi-engine-qoder.git ../takopi-engine-qoder
+git clone git@github.com:RicardoKLee/takopi-engine-antigravity.git ../takopi-engine-antigravity
 git clone git@github.com:RicardoKLee/takopi-transport-feishu.git ../takopi-transport-feishu
 
 uv pip install -e ../takopi-engine-cursor --python "$TAKOPI_PY"
 uv pip install -e ../takopi-engine-qoder --python "$TAKOPI_PY"
+uv pip install -e ../takopi-engine-antigravity --python "$TAKOPI_PY"
 uv pip install -e ../takopi-transport-feishu --python "$TAKOPI_PY"
 ```
 
@@ -74,6 +77,7 @@ extensions ship as separate public packages on **PyPI** (same pattern as `takopi
 |---------|------|------|------|----|
 | `takopi-engine-cursor` | [RicardoKLee/takopi-engine-cursor](https://github.com/RicardoKLee/takopi-engine-cursor) | [pypi](https://pypi.org/project/takopi-engine-cursor/) | engine | `cursor` |
 | `takopi-engine-qoder` | [RicardoKLee/takopi-engine-qoder](https://github.com/RicardoKLee/takopi-engine-qoder) | [pypi](https://pypi.org/project/takopi-engine-qoder/) | engine | `qoder` |
+| `takopi-engine-antigravity` | [RicardoKLee/takopi-engine-antigravity](https://github.com/RicardoKLee/takopi-engine-antigravity) | — | engine | `antigravity` |
 | `takopi-transport-feishu` | [RicardoKLee/takopi-transport-feishu](https://github.com/RicardoKLee/takopi-transport-feishu) | [pypi](https://pypi.org/project/takopi-transport-feishu/) | transport | `feishu` |
 | `takopi-discord` | [asianviking/takopi-discord](https://github.com/asianviking/takopi-discord) | [pypi](https://pypi.org/project/takopi-discord/) | transport | `discord` |
 
@@ -112,7 +116,7 @@ takopi cursor --transport feishu --no-onboard
 takopi cursor --transport discord
 ```
 
-send a message to your bot. prefix with `/codex`, `/claude`, `/cursor`, `/qoder`, `/opencode`, or `/pi` to pick an engine. reply to continue a thread.
+send a message to your bot. prefix with `/codex`, `/claude`, `/cursor`, `/qoder`, `/antigravity`, `/opencode`, or `/pi` to pick an engine. reply to continue a thread.
 
 send `/help` in chat to list available commands, engines, and project aliases for your transport.
 
@@ -239,13 +243,14 @@ cd takopi && uv sync && uv run pytest
 # plugins (separate repos)
 git clone git@github.com:RicardoKLee/takopi-engine-cursor.git && cd takopi-engine-cursor && uv run pytest
 git clone git@github.com:RicardoKLee/takopi-engine-qoder.git && cd takopi-engine-qoder && uv run pytest
+git clone git@github.com:RicardoKLee/takopi-engine-antigravity.git && cd takopi-engine-antigravity && uv run pytest
 git clone git@github.com:RicardoKLee/takopi-transport-feishu.git && cd takopi-transport-feishu && uv run pytest
 ```
 
 after changing plugins, reinstall packages and restart PM2 transports:
 
 ```sh
-uv pip install -U takopi-engine-cursor takopi-engine-qoder takopi-transport-feishu --python "$TAKOPI_PY"
+uv pip install -U takopi-engine-cursor takopi-engine-qoder takopi-engine-antigravity takopi-transport-feishu --python "$TAKOPI_PY"
 pm2 restart takopi-telegram takopi-feishu takopi-discord
 ```
 
