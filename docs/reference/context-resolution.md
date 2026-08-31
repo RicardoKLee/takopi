@@ -95,6 +95,7 @@ Supported directives:
 - `/<engine-id>` or `/<engine-id>@bot`: chooses the engine
 - `/<project-alias>`: chooses a project alias
 - `@branch`: chooses a git branch/worktree
+- `<path>`: chooses an arbitrary directory (see [Path contexts](#path-contexts))
 
 Rules:
 
@@ -176,3 +177,38 @@ Reply to a progress message to continue in the same context:
 ```
 ctx: z80 @feat/streaming
 ```
+
+## Path contexts
+
+Besides registered projects, a run context can point at an arbitrary directory —
+no config entry required.
+
+Recognition rules for path directive tokens:
+
+- `~`, `~/...`, `./...`, `../...` are always path tokens
+- `/a/b...` (absolute path with at least one more `/`) is a path token; single
+  names like `/engine` or `/project` never match
+- Paths may contain spaces when quoted in commands (`/ctx set "~/my dir"`)
+
+Usage:
+
+- One-shot: put the path at the start of a message — `~/dev/repo fix the bug` —
+  optionally combined with an engine: `/claude ~/dev/repo fix the bug`
+- Persistent binding: `/ctx set ~/dev/repo` (Telegram/Feishu); Discord uses
+  `/ctx set path:<dir>` in the slash command's `path` option. Thread/topic-level
+  `/ctx set` stays project-only; bind the path at chat/channel level instead
+
+Validation:
+
+- The expanded path must exist and be a directory
+- The filesystem root is rejected
+- Being a git repository is **not** required
+- A path context cannot be combined with `@branch` (worktrees are project-only);
+  combining with a project directive is an error
+
+`ctx:` footer: path contexts render as `` `ctx: <resolved path>` `` and replies
+parse them back (an error is raised if the directory no longer exists).
+
+Priority: reply `ctx:` line > explicit directives (path or project) > chat/topic
+binding > `chat_id` project mapping. A path-bound chat can still run a one-off
+project directive message; `@branch` in a path-bound chat is an error.

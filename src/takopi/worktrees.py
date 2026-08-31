@@ -17,12 +17,37 @@ class WorktreeError(RuntimeError):
     pass
 
 
+def validate_context_path(value: str | Path) -> Path:
+    """Validate a path-based run context directory.
+
+    Accepts arbitrary directories (git repo or not). The resolved path must
+    exist, be a directory, and not be the filesystem root.
+    """
+    raw = Path(value).expanduser()
+    resolved = raw.resolve(strict=False)
+    if not resolved.exists():
+        raise WorktreeError(f"path not found: {raw}")
+    if not resolved.is_dir():
+        raise WorktreeError(f"path is not a directory: {raw}")
+    if resolved.parent == resolved:
+        raise WorktreeError("path cannot be the filesystem root")
+    return resolved
+
+
 def resolve_run_cwd(
     context: RunContext | None,
     *,
     projects: ProjectsConfig,
 ) -> Path | None:
-    if context is None or context.project is None:
+    if context is None:
+        return None
+    if context.path is not None:
+        if context.project is not None or context.branch is not None:
+            raise WorktreeError(
+                "path context cannot be combined with project or branch"
+            )
+        return validate_context_path(context.path)
+    if context.project is None:
         return None
     project = projects.projects.get(context.project)
     if project is None:

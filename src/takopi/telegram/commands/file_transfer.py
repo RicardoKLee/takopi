@@ -135,6 +135,7 @@ async def _prepare_file_put_plan(
             reply_text=msg.reply_to_text,
             ambient_context=ambient_context,
             chat_id=msg.chat_id,
+            allow_path_directives=False,
         )
     except DirectiveError as exc:
         await reply(text=f"error:\n{exc}")
@@ -503,6 +504,7 @@ async def _handle_file_get(
             reply_text=msg.reply_to_text,
             ambient_context=ambient_context,
             chat_id=msg.chat_id,
+            allow_path_directives=False,
         )
     except DirectiveError as exc:
         await reply(text=f"error:\n{exc}")

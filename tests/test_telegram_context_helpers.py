@@ -49,12 +49,16 @@ def test_format_context_variants(tmp_path: Path) -> None:
         tg_context._format_context(runtime, RunContext(project="alpha", branch="dev"))
         == "Alpha @dev"
     )
+    assert (
+        tg_context._format_context(runtime, RunContext(path=Path("/tmp/dir")))
+        == "/tmp/dir"
+    )
 
 
 def test_usage_helpers() -> None:
     assert (
         tg_context._usage_ctx_set(chat_project=None)
-        == "usage: `/ctx set <project> [@branch]`"
+        == "usage: `/ctx set <project> [@branch]` or `/ctx set <path>`"
     )
     assert (
         tg_context._usage_ctx_set(chat_project="alpha") == "usage: `/ctx set [@branch]`"
@@ -87,7 +91,7 @@ def test_parse_project_branch_args_missing_project(tmp_path: Path) -> None:
         chat_project=None,
     )
     assert context is None
-    assert error == "usage: `/ctx set <project> [@branch]`"
+    assert error == "usage: `/ctx set <project> [@branch]` or `/ctx set <path>`"
 
 
 def test_parse_project_branch_args_requires_branch(tmp_path: Path) -> None:

@@ -14,7 +14,7 @@ from .commands import (
 )
 from .config import ConfigError
 from .context import RunContext
-from .directives import DirectiveError
+from .directives import DirectiveError, is_path_directive_token
 from .events import EventFactory
 from .model import (
     Action,
@@ -38,6 +38,7 @@ from .runner_bridge import (
 from .transport import MessageRef, RenderedMessage, SendOptions, Transport
 from .transport_runtime import ResolvedMessage, ResolvedRunner, TransportRuntime
 from .transports import SetupResult, TransportBackend
+from .worktrees import WorktreeError, validate_context_path
 
 from .config import HOME_CONFIG_PATH, read_config, write_config
 from .ids import RESERVED_COMMAND_IDS
@@ -71,6 +72,7 @@ __all__ = [
     "JsonlSubprocessRunner",
     "MessageRef",
     "DirectiveError",
+    "is_path_directive_token",
     "Presenter",
     "ProgressState",
     "ProgressTracker",
@@ -90,6 +92,8 @@ __all__ = [
     "SendOptions",
     "SetupIssue",
     "SetupResult",
+    "WorktreeError",
+    "validate_context_path",
     "StartedEvent",
     "TAKOPI_PLUGIN_API_VERSION",
     "Transport",

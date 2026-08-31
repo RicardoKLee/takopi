@@ -24,7 +24,11 @@ _TOPIC_TITLE_MAX_LEN = 128
 
 
 def _format_context(runtime: TransportRuntime, context: RunContext | None) -> str:
-    if context is None or context.project is None:
+    if context is None:
+        return "none"
+    if context.path is not None:
+        return str(context.path)
+    if context.project is None:
         return "none"
     project = runtime.project_alias_for_key(context.project)
     if context.branch:
@@ -35,7 +39,7 @@ def _format_context(runtime: TransportRuntime, context: RunContext | None) -> st
 def _usage_ctx_set(*, chat_project: str | None) -> str:
     if chat_project is not None:
         return "usage: `/ctx set [@branch]`"
-    return "usage: `/ctx set <project> [@branch]`"
+    return "usage: `/ctx set <project> [@branch]` or `/ctx set <path>`"
 
 
 def _usage_topic(*, chat_project: str | None) -> str:
@@ -150,6 +154,8 @@ def _format_ctx_status(
 def _merge_topic_context(
     *, chat_project: str | None, bound: RunContext | None
 ) -> RunContext | None:
+    if bound is not None and bound.path is not None:
+        return bound
     if chat_project is None:
         return bound
     if bound is None:

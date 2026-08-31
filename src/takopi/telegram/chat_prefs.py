@@ -20,6 +20,7 @@ class _ChatPrefs(msgspec.Struct, forbid_unknown_fields=False):
     trigger_mode: str | None = None
     context_project: str | None = None
     context_branch: str | None = None
+    context_path: str | None = None
     engine_overrides: dict[str, EngineOverrides] = msgspec.field(default_factory=dict)
 
 
@@ -138,6 +139,9 @@ class ChatPrefsStore(JsonStateStore[_ChatPrefsState]):
             chat = self._get_chat_locked(chat_id)
             if chat is None:
                 return None
+            path = _normalize_text(chat.context_path)
+            if path is not None:
+                return RunContext(path=Path(path))
             project = _normalize_text(chat.context_project)
             if project is None:
                 return None
@@ -147,21 +151,31 @@ class ChatPrefsStore(JsonStateStore[_ChatPrefsState]):
     async def set_context(self, chat_id: int, context: RunContext | None) -> None:
         project = _normalize_text(context.project) if context is not None else None
         branch = _normalize_text(context.branch) if context is not None else None
+        path = (
+            str(context.path) if context is not None and context.path is not None else None
+        )
         async with self._lock:
             self._reload_locked_if_needed()
             chat = self._get_chat_locked(chat_id)
-            if project is None:
+            if project is None and path is None:
                 if chat is None:
                     return
                 chat.context_project = None
                 chat.context_branch = None
+                chat.context_path = None
                 if self._chat_is_empty(chat):
                     self._remove_chat_locked(chat_id)
                 self._save_locked()
                 return
             chat = self._ensure_chat_locked(chat_id)
-            chat.context_project = project
-            chat.context_branch = branch
+            if path is not None:
+                chat.context_project = None
+                chat.context_branch = None
+                chat.context_path = path
+            else:
+                chat.context_project = project
+                chat.context_branch = branch
+                chat.context_path = None
             self._save_locked()
 
     async def clear_context(self, chat_id: int) -> None:
@@ -224,6 +238,7 @@ class ChatPrefsStore(JsonStateStore[_ChatPrefsState]):
             and _normalize_trigger_mode(chat.trigger_mode) is None
             and _normalize_text(chat.context_project) is None
             and _normalize_text(chat.context_branch) is None
+            and _normalize_text(chat.context_path) is None
             and not self._has_engine_overrides(chat.engine_overrides)
         )
 

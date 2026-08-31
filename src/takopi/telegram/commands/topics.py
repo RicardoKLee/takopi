@@ -6,6 +6,8 @@ from ...context import RunContext
 from ...markdown import MarkdownParts
 from ...transport_runtime import TransportRuntime
 from ...transport import RenderedMessage, SendOptions
+from ...worktrees import WorktreeError, validate_context_path
+from ...directives import is_path_directive_token
 from ..chat_prefs import ChatPrefsStore
 from ..chat_sessions import ChatSessionStore
 from ..context import (
@@ -128,6 +130,15 @@ def _parse_chat_ctx_args(
     tokens = split_command_args(args_text)
     if not tokens:
         return None, _usage_ctx_set(chat_project=None)
+    first = tokens[0]
+    if is_path_directive_token(first):
+        if len(tokens) > 1:
+            return None, "path context does not take extra arguments"
+        try:
+            resolved = validate_context_path(first)
+        except WorktreeError as exc:
+            return None, str(exc)
+        return RunContext(path=resolved), None
     if len(tokens) > 2:
         return None, "too many arguments"
     project_token: str | None = None

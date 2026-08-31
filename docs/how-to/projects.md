@@ -32,6 +32,19 @@ Send:
 /happy-gadgets pinky-link two threads
 ```
 
+## Bind an arbitrary directory (no config needed)
+
+Any directory can be a run context without registering a project:
+
+```
+~/dev/some-repo fix the bug          # one-shot
+/claude ~/dev/some-repo fix the bug  # combined with an engine
+/ctx set ~/dev/some-repo             # persistent chat binding (Telegram)
+```
+
+See [Context resolution → Path contexts](../reference/context-resolution.md#path-contexts)
+for details and validation rules.
+
 ## Project-specific settings
 
 Projects can override global defaults:

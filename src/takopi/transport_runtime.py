@@ -8,6 +8,7 @@ from typing import Any, Literal
 from .config import ConfigError, ProjectsConfig
 from .context import RunContext
 from .directives import (
+    DirectiveError,
     ParsedDirectives,
     format_context_line,
     parse_context_line,
@@ -179,11 +180,13 @@ class TransportRuntime:
         reply_text: str | None,
         ambient_context: RunContext | None = None,
         chat_id: int | None = None,
+        allow_path_directives: bool = True,
     ) -> ResolvedMessage:
         directives = parse_directives(
             text,
             engine_ids=self._router.engine_ids,
             projects=self._projects,
+            allow_path_directives=allow_path_directives,
         )
         reply_ctx = parse_context_line(reply_text, projects=self._projects)
         resume_token = self._router.resolve_resume(directives.prompt, reply_text)
@@ -226,6 +229,23 @@ class TransportRuntime:
     ) -> tuple[RunContext | None, ContextSource]:
         if reply_ctx is not None:
             return reply_ctx, "reply_ctx"
+
+        if directives.path is not None:
+            return RunContext(path=Path(directives.path).expanduser()), "directives"
+
+        ambient_path = (
+            ambient_context is not None
+            and ambient_context.path is not None
+            and ambient_context.project is None
+        )
+        if ambient_path:
+            if directives.branch is not None and directives.project is None:
+                raise DirectiveError(
+                    "cannot combine @branch with a path-bound chat; "
+                    "bind a project first or drop the branch"
+                )
+            if directives.project is None:
+                return RunContext(path=ambient_context.path), "ambient"
 
         project_key = directives.project
         branch = directives.branch
