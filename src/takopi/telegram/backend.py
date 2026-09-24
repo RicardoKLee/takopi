@@ -41,15 +41,12 @@ def _build_startup_message(
     topics: TelegramTopicsSettings,
 ) -> str:
     available_engines = list(runtime.available_engine_ids())
-    missing_engines = list(runtime.missing_engine_ids())
     misconfigured_engines = list(runtime.engine_ids_with_status("bad_config"))
     failed_engines = list(runtime.engine_ids_with_status("load_error"))
 
     engine_list = ", ".join(available_engines) if available_engines else "none"
 
     notes: list[str] = []
-    if missing_engines:
-        notes.append(f"not installed: {', '.join(missing_engines)}")
     if misconfigured_engines:
         notes.append(f"misconfigured: {', '.join(misconfigured_engines)}")
     if failed_engines:

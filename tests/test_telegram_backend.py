@@ -17,7 +17,7 @@ from takopi.telegram import backend as telegram_backend
 from takopi.transport_runtime import TransportRuntime
 
 
-def test_build_startup_message_includes_missing_engines(tmp_path: Path) -> None:
+def test_build_startup_message_only_lists_available_engines(tmp_path: Path) -> None:
     codex = "codex"
     pi = "pi"
     runner = ScriptRunner([Return(answer="ok")], engine=codex)
@@ -50,7 +50,8 @@ def test_build_startup_message_includes_missing_engines(tmp_path: Path) -> None:
     )
 
     assert "takopi is ready" in message
-    assert "engines: `codex (not installed: pi)`" in message
+    assert "engines: `codex`" in message
+    assert "not installed" not in message
     assert "projects: `none`" in message
 
 

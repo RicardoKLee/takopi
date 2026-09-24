@@ -11,4 +11,5 @@ def install_issue(cmd: str, install_cmd: str | None) -> SetupIssue:
     return SetupIssue(
         f"install {cmd}",
         lines,
+        fatal=False,
     )

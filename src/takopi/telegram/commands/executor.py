@@ -174,7 +174,9 @@ async def _run_engine(
                 engine_override=engine_override,
             )
         except RunnerUnavailableError as exc:
-            await reply(text=f"error:\n{exc}")
+            await reply(
+                text=runtime.engine_unavailable_message(exc.engine, exc.issue)
+            )
             return
         runner: Runner = entry.runner
         if not show_resume_line:
@@ -183,7 +185,7 @@ async def _run_engine(
         if warning is not None:
             runner = cast(Runner, _PreludeRunner(runner, [warning]))
         if not entry.available:
-            reason = entry.issue or "engine unavailable"
+            reason = runtime.engine_unavailable_message(entry.engine, entry.issue)
             await _send_runner_unavailable(
                 exec_cfg,
                 chat_id=chat_id,

@@ -17,7 +17,11 @@ class SetupResult:
 
     @property
     def ok(self) -> bool:
-        return not self.issues
+        return not any(issue.fatal for issue in self.issues)
+
+    @property
+    def warnings(self) -> list[SetupIssue]:
+        return [issue for issue in self.issues if not issue.fatal]
 
 
 @runtime_checkable

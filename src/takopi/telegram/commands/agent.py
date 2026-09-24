@@ -140,7 +140,7 @@ async def _handle_agent_command(
             f"project: {project_default}, "
             f"global: {cfg.runtime.default_engine}"
         )
-        available = ", ".join(cfg.runtime.engine_ids)
+        available = ", ".join(cfg.runtime.available_engine_ids())
         available_line = f"available: {available}"
         await reply(
             text="\n\n".join(
@@ -157,10 +157,13 @@ async def _handle_agent_command(
             return
         engine = tokens[1].strip().lower()
         if engine not in cfg.runtime.engine_ids:
-            available = ", ".join(cfg.runtime.engine_ids)
+            available = ", ".join(cfg.runtime.available_engine_ids())
             await reply(
                 text=f"unknown engine `{engine}`.\navailable engines: `{available}`",
             )
+            return
+        if engine not in cfg.runtime.available_engine_ids():
+            await reply(text=cfg.runtime.engine_unavailable_message(engine))
             return
         if tkey is not None:
             if topic_store is None:

@@ -274,9 +274,11 @@ def _run_auto_router(
             if setup_needs_config_fn(setup):
                 fail_missing_config_fn(setup.config_path)
             else:
-                first = setup.issues[0]
+                first = next(issue for issue in setup.issues if issue.fatal)
                 typer.echo(f"error: {first.title}", err=True)
             raise typer.Exit(code=1)
+    for issue in setup.warnings:
+        logger.warning("setup.warning", issue=issue.title)
     try:
         settings, config_path = load_settings_fn()
         if transport_override and transport_override != settings.transport:

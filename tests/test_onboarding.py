@@ -29,7 +29,10 @@ def test_check_setup_marks_missing_codex(monkeypatch, tmp_path: Path) -> None:
     titles = {issue.title for issue in result.issues}
     assert "install codex" in titles
     assert "create a config" not in titles
-    assert result.ok is False
+    # A missing engine CLI is a warning, not a fatal setup error: takopi must
+    # still start and only report unavailable engines when they are used.
+    assert result.ok is True
+    assert {warning.title for warning in result.warnings} == {"install codex"}
 
 
 def test_check_setup_marks_missing_config(monkeypatch, tmp_path: Path) -> None:

@@ -27,6 +27,18 @@ def _make_runtime(*, project_default_engine: str | None = None) -> TransportRunt
     return TransportRuntime(router=router, projects=projects)
 
 
+def test_engine_unavailable_message_lists_available_engines() -> None:
+    runtime = _make_runtime()
+
+    message = runtime.engine_unavailable_message("cursor", "agent not found on PATH")
+
+    assert "cursor" in message
+    assert "agent not found on PATH" in message
+    assert "available engines" in message
+    assert "codex" in message
+    assert "pi" in message
+
+
 def test_resolve_engine_uses_project_default() -> None:
     runtime = _make_runtime(project_default_engine="pi")
     engine = runtime.resolve_engine(

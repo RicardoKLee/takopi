@@ -145,6 +145,16 @@ class TransportRuntime:
     def missing_engine_ids(self) -> tuple[EngineId, ...]:
         return self.engine_ids_with_status("missing_cli")
 
+    def engine_unavailable_message(
+        self, engine: EngineId, issue: str | None = None
+    ) -> str:
+        available = ", ".join(self.available_engine_ids()) or "none"
+        reason = issue or "not available on this host"
+        return (
+            f"engine `{engine}` is unavailable ({reason}).\n"
+            f"available engines: `{available}`"
+        )
+
     def project_aliases(self) -> tuple[str, ...]:
         return tuple(project.alias for project in self._projects.projects.values())
 

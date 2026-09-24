@@ -86,7 +86,7 @@ async def _handle_model_command(
             "unavailable" if chat_prefs is None else resolution.chat_value or "none"
         )
         defaults_line = f"defaults: topic: {topic_label}, chat: {chat_label}"
-        available_line = f"available engines: {', '.join(cfg.runtime.engine_ids)}"
+        available_line = f"available engines: {', '.join(cfg.runtime.available_engine_ids())}"
         await reply(
             text="\n\n".join([engine_line, model_line, defaults_line, available_line])
         )
@@ -120,7 +120,7 @@ async def _handle_model_command(
         else:
             engine = engine_arg
             if engine not in engine_ids:
-                available = ", ".join(cfg.runtime.engine_ids)
+                available = ", ".join(cfg.runtime.available_engine_ids())
                 await reply(
                     text=f"unknown engine `{engine}`.\navailable engines: `{available}`"
                 )
@@ -185,7 +185,7 @@ async def _handle_model_command(
                 return
             engine, _ = selection
         if engine not in engine_ids:
-            available = ", ".join(cfg.runtime.engine_ids)
+            available = ", ".join(cfg.runtime.available_engine_ids())
             await reply(
                 text=f"unknown engine `{engine}`.\navailable engines: `{available}`"
             )

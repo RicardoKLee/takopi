@@ -99,8 +99,6 @@ def build_router(
         try:
             runner = backend.build_runner(engine_cfg, config_path)
         except Exception as exc:
-            if engine_id == default_engine:
-                raise
             issue = issue or str(exc)
             if engine_cfg:
                 try:
@@ -122,10 +120,7 @@ def build_router(
             else:
                 issue = f"{cmd} not found on PATH"
 
-        if status != "ok" and engine_id == default_engine:
-            raise ConfigError(f"Default engine {engine_id!r} unavailable: {issue}")
-
-        if status != "ok" and engine_id != default_engine:
+        if status != "ok":
             warnings.append(f"{engine_id}: {issue}")
 
         entries.append(
@@ -136,6 +131,27 @@ def build_router(
                 issue=issue,
             )
         )
+
+    if not entries:
+        raise ConfigError("No engine runners could be loaded.")
+
+    default_entry = next(
+        (entry for entry in entries if entry.engine == default_engine), None
+    )
+    if default_entry is None or not default_entry.available:
+        available = [entry for entry in entries if entry.available]
+        if not available:
+            raise ConfigError(
+                f"Default engine {default_engine!r} is unavailable and no other "
+                "engine is available."
+            )
+        fallback = available[0].engine
+        logger.warning(
+            "setup.default_engine_fallback",
+            requested=default_engine,
+            fallback=fallback,
+        )
+        default_engine = fallback
 
     for warning in warnings:
         logger.warning("setup.warning", issue=warning)

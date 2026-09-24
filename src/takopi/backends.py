@@ -15,6 +15,7 @@ EngineConfig = dict[str, Any]
 class SetupIssue:
     title: str
     lines: tuple[str, ...]
+    fatal: bool = True
 
 
 @dataclass(frozen=True, slots=True)
